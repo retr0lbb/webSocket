@@ -1,0 +1,69 @@
+<html>
+    <head><title>Simple chat</title></head>
+    <body>
+        <h1>Chat em tempo real</h1>
+
+        <pre id="messages" style="height: 400px; overflow: scroll;"></pre>
+        <input type="text" id="messageBox" placeholder="Sua mensagem">
+        <button id="send">Enviar</button>
+
+        <script>
+            (function(){
+                const sendBtn = document.getElementById('send');
+                const messages = document.getElementById('messages');
+                const messageBox = document.getElementById('messageBox');
+
+                let ws;
+
+                const showMessage = (message, sender) =>{
+                    messages.textContent += `\n\n${sender}: ${message}`
+                    messages.scrollTop = messages.scrollHeight;
+                    messageBox.value ="";
+
+                }
+
+                function init(){
+                    if(ws){
+                        ws.onerror = ws.onopen = ws.onclose = null;
+                        ws.close();
+                    }
+
+                    ws =  new WebSocket('ws://localhost:6969');
+                    ws.onopen = () =>{
+                        console.log(`conection opend ${ws}`);
+                    }
+                    ws.onmessage = ({data}) => {    
+                        if(typeof data ==="string"){
+                            showMessage(data, "Outro: ")
+                        }else if(data instanceof Blob){
+                            const leitor = new FileReader();
+                            leitor.onload = () =>{
+                                const mensagem = leitor.result;
+                                showMessage(mensagem, "Outro")
+                            };
+                            leitor.readAsText(data);
+                        }
+                    
+                    };
+                    ws.onclose = () =>{
+                        ws = null
+                    }
+                }
+
+
+                sendBtn.onclick = () =>{
+                    if(!ws){
+                        showMessage("No web socket");
+                        return;
+                    }
+
+                    ws.send(messageBox.value);
+                    showMessage(messageBox.value, "Eu: ");
+                }
+
+
+                init();
+            })()
+        </script>
+    </body>
+</html>
